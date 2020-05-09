@@ -45,10 +45,10 @@
             }
 
             float circle(in float2 _st, in float _radius) {
-                float2 dist = _st - float2(.5, .5);
-                return 1. - smoothstep(_radius - (_radius * .01),
-                    _radius + (_radius * .01),
-                    dot(dist, dist) * 4.);
+                float dist = length(_st - .5) / _radius;
+                float pwidth = length(float2(ddx(dist), ddy(dist)));
+                float alpha = smoothstep(0.5, 0.5 - pwidth * 1.5, dist);
+                return alpha;
             }
 
             float4 dots(in float2 uv, float ang) {
@@ -61,23 +61,23 @@
 
             fixed4 frag(v2f i) : SV_Target
             {
-                fixed4 c = fixed4(1,1,1,1);
-
+                fixed4 c = 1;
                 float4 color = dots(i.uv, .25);//yellow
                 float dotsize = dot(tex2D(_MainTex, color.zw), float3(0, 0, 1));
-                if (circle(abs(color.xy), clamp(1 - dotsize, 0, 1)) > 0.5) c.xyz = float3(1,1,0);
+                c.rgb = c - circle(color , 2 - saturate(dotsize) * 2) * float3(0, 0, 1);
 
                 color = dots(i.uv, .392);//cyan
                 dotsize = dot(tex2D(_MainTex, color.zw), float3(1, 0, 0));
-                if (circle(abs(color.xy), clamp(1 - dotsize, 0, 1)) > 0.5) c.xyz *= float3(0, 1, 1);
+                c.rgb = c - circle(color, 2 - saturate(dotsize) * 2) * float3(1, 0, 0);
 
                 color = dots(i.uv, 1.177);//magenta
                 dotsize = dot(tex2D(_MainTex, color.zw), float3(0, 1, 0));
-                if (circle(abs(color.xy), clamp(1 - dotsize, 0, 1)) > 0.5) c.xyz *= float3(1, 0, 1);
+                c.rgb = c - circle(color, 2 - saturate(dotsize) * 2) * float3(0, 1, 0);
 
-                 color = dots(i.uv, 0.785);//black
-                 dotsize = dot(tex2D(_MainTex, color.zw), float3(1, 1, 1));
-                if (circle(abs(color.xy), clamp(1 - dotsize, 0, 1)) > 0.5) c.xyz = float3(0, 0, 0);
+                color = dots(i.uv, 0.785);//black
+                float3 dc = tex2D(_MainTex, color.zw);
+                dotsize = (dc.r + dc.g + dc.b) / 3;
+                c.rgb = c - circle(color, 1 - saturate(dotsize)) * float3(1, 1, 1);
 
                 return c;
             }
